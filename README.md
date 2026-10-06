@@ -1,5 +1,9 @@
 # tableskin
 
+> Built on [CSSV](https://github.com/rhpaiva/cssv) by Rodrigo Paiva: its
+> table model and six of its stylesheets, reworked to apply to any table.
+> MIT, like the original; see [Credit](#credit) and `NOTICE`.
+
 A hammer for the day a table shows up that deserves better than default HTML.
 Feed it a CSV file, a list of records or a DataFrame. It works out what each
 column is (money, dates, statuses, people, ids, long text), marks up the table
