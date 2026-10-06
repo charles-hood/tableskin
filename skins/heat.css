@@ -1,0 +1,15 @@
+/* heat (modifier): shade every measure cell by where it sits in its column.
+   Unsigned columns run from clear to orange; signed columns go blue below
+   zero and orange above, by size. Combine with a skin: "clean heat". */
+@layer tableskin.mod {
+  [data-skin~="heat"] {
+    --heat: light-dark(#ea580c, #f97316);
+    --cool: light-dark(#2563eb, #3b82f6);
+    & td:is([data-role="number"], [data-role="money"], [data-role="percent"]) {
+      background-color: color-mix(in oklab, var(--heat) calc(var(--t, 0) * 50%), transparent);
+    }
+    & td.positive[data-signed] { background-color: color-mix(in oklab, var(--heat) calc(var(--mag) * 50%), transparent); }
+    & td.negative[data-signed] { background-color: color-mix(in oklab, var(--cool) calc(var(--mag) * 50%), transparent); }
+    & td.zero[data-signed] { background-color: transparent; }
+  }
+}

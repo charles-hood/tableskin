@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tableskin Gallery</title>
+<style>
+:root { color-scheme: light dark; --page: light-dark(#f6f5f2, #161615); --ink: light-dark(#1d1d1b, #e8e6e1); --muted: light-dark(#6b6a65, #9d9b94); }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+body { margin: 0; padding: 32px 16px 80px; background: var(--page); color: var(--ink); font: 15px/1.5 system-ui, sans-serif; }
+main { max-width: 1040px; margin: 0 auto; }
+h1 { margin: 0 0 4px; font-size: 28px; letter-spacing: -0.02em; }
+.lede { margin: 0 0 24px; color: var(--muted); max-width: 68ch; }
+.theme { position: fixed; top: 12px; right: 12px; font: inherit; }
+section { margin: 0 0 56px; }
+section header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-bottom: 14px; }
+h2 { margin: 0; font: 600 13px ui-monospace, Menlo, monospace; }
+section header p { margin: 0; color: var(--muted); font-size: 13px; flex: 1; }
+label { font-size: 13px; color: var(--muted); }
+</style>
+<style>
+/* tableskin base: the wrapper, and CSSV's default stylesheet (SPEC 8.2).
+   Adapted from CSSV by Rodrigo Paiva, MIT; see NOTICE.
+   Each skin is scoped to [data-skin~="name"] and sits in a layer, so tables
+   on one page can wear different skins, none can style the page around
+   it, and any unlayered rule on the page still wins over all of them. */
+@layer tableskin.base, tableskin.skin, tableskin.mod;
+
+@layer tableskin.base {
+  .tableskin {
+    contain: paint;                    /* SPEC 11.4: skins draw inside this box only */
+    overflow: auto hidden;
+    --good: light-dark(#15803d, #4ade80);
+    --warn: light-dark(#b45309, #fbbf24);
+    --bad: light-dark(#b91c1c, #f87171);
+    --neutral: color-mix(in srgb, currentColor 45%, transparent);
+  }
+  .tableskin table { border-collapse: collapse; }
+  .tableskin :is(th, td) { padding: 0.25em 0.5em; text-align: start; vertical-align: top; white-space: pre-wrap; }
+  .tableskin th { font-weight: bold; }
+  .tableskin .number { text-align: end; font-variant-numeric: tabular-nums; }
+  .tableskin caption { padding: 0 0 0.5em; text-align: start; font-weight: 600; }
+  .tableskin [data-tone="good"] { --tone: var(--good); }
+  .tableskin [data-tone="warn"] { --tone: var(--warn); }
+  .tableskin [data-tone="bad"] { --tone: var(--bad); }
+  .tableskin [data-tone="neutral"] { --tone: var(--neutral); }
+}
+
+/* clean: the default. Hairline rules, quiet uppercase headers, colored dots
+   for statuses and categories. Colors are mixed from currentColor, so it
+   follows the page's light or dark theme.
+   After the reference tables on cssv.dev (site/tables.css), MIT; see NOTICE. */
+@layer tableskin.skin {
+  [data-skin~="clean"] {
+    & table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; line-height: 1.5; }
+    & caption { padding: 0 0 0.8em; font-size: 1.15em; font-weight: 650; letter-spacing: -0.01em; }
+    & :is(th, td) { padding: 0.6em 13px; border-bottom: 1px solid color-mix(in srgb, currentColor 11%, transparent); }
+    & thead th {
+      vertical-align: bottom;
+      border-bottom-color: color-mix(in srgb, currentColor 24%, transparent);
+      color: color-mix(in srgb, currentColor 58%, transparent);
+      font-size: 0.74em;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    & tbody tr:last-child td { border-bottom: 0; }
+    & tbody tr:hover td { background-color: color-mix(in srgb, currentColor 3.5%, transparent); }
+
+    & td:is([data-role="id"], [data-role="ordinal"]) {
+      color: color-mix(in srgb, currentColor 62%, transparent);
+      font: 0.86em/1.75 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+    & td:is([data-role="date"], [data-role="datetime"], [data-role="time"]) {
+      color: color-mix(in srgb, currentColor 65%, transparent);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    & td[data-primary] { font-weight: 550; }
+    & td.number.negative[data-signed] { color: var(--bad); }
+    & td[data-na] { color: color-mix(in srgb, currentColor 40%, transparent); }
+
+    /* A dot before each status (by tone) and each category (by hue). */
+    & td:is([data-tone], [data-role="label"]:not(:empty)) { white-space: nowrap; }
+    & td:is([data-tone], [data-role="label"]:not(:empty))::before {
+      content: "";
+      display: inline-block;
+      width: 0.5em;
+      height: 0.5em;
+      margin-inline-end: 0.5em;
+      border-radius: 50%;
+      background: var(--tone, hsl(var(--hue) 65% 52%));
+      vertical-align: 0.08em;
+    }
+
+    & tr[data-total] td { font-weight: 650; }
+    & tbody tr:not([data-total]) + tr[data-total] td { border-top: 1.5px solid color-mix(in srgb, currentColor 30%, transparent); }
+  }
+}
+
+/* ledger: a bank statement. Money in is green with a plus sign, money out
+   keeps the text color, a running balance stays quiet. Follows the page's
+   light or dark theme.
+   Adapted from examples/ledger/ledger.css in CSSV, MIT; see NOTICE. The
+   original names its columns; this one finds them by role. */
+@layer tableskin.skin {
+  [data-skin~="ledger"] {
+    --credit: light-dark(#059669, #34d399);
+    & table { width: 100%; border-collapse: separate; border-spacing: 0; font: 14px/1.5 system-ui, sans-serif; }
+    & caption { padding: 0 0 0.9em; font-size: 1.15em; font-weight: 650; letter-spacing: -0.01em; }
+    & :is(th, td) {
+      padding: 0.65em 13px;
+      border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+      white-space: nowrap;
+      vertical-align: baseline;
+    }
+    & thead th {
+      border-bottom-color: color-mix(in srgb, currentColor 22%, transparent);
+      color: color-mix(in srgb, currentColor 55%, transparent);
+      font-size: 0.72em;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    & tbody tr:last-child td { border-bottom: 0; }
+    & tbody tr:hover td { background: color-mix(in srgb, currentColor 4%, transparent); }
+
+    & td:is([data-role="date"], [data-role="datetime"], [data-role="time"]) {
+      color: color-mix(in srgb, currentColor 60%, transparent);
+      font-variant-numeric: tabular-nums;
+    }
+    & td:is([data-role="id"], [data-role="ordinal"]) {
+      color: color-mix(in srgb, currentColor 50%, transparent);
+      font: 0.8em ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+    & td[data-primary] { font-weight: 550; }
+    & td[data-role="prose"] { min-width: 16em; white-space: pre-wrap; }
+    & td:is([data-role="label"], [data-role="status"], [data-role="person"]) {
+      color: color-mix(in srgb, currentColor 65%, transparent);
+      font-size: 0.86em;
+    }
+    & td:is([data-role="label"]:not(:empty), [data-tone])::before {
+      content: "";
+      display: inline-block;
+      width: 0.5em;
+      height: 0.5em;
+      margin-inline-end: 0.5em;
+      border-radius: 50%;
+      background: var(--tone, hsl(var(--hue) 60% 50%));
+      opacity: 0.8;
+      vertical-align: 0.1em;
+    }
+
+    /* Signed money is the amount column; unsigned money beside it is a balance. */
+    & td[data-role="money"][data-signed] { font-weight: 600; }
+    & td.number.positive[data-signed] { color: var(--credit); }
+    & td.number.positive[data-signed]::before { content: "+"; }
+    & table:has(td[data-role="money"][data-signed]) td[data-role="money"]:not([data-signed]) {
+      color: color-mix(in srgb, currentColor 60%, transparent);
+    }
+    & tr[data-total] td { font-weight: 650; border-top: 1.5px solid color-mix(in srgb, currentColor 30%, transparent); }
+
+    /* Narrow screens keep the date, the description and the amounts. */
+    @media (max-width: 640px) {
+      & :is(th, td) { padding-inline: 0.5em; }
+      & :is(th, td):is([data-role="id"], [data-role="label"]):not([data-primary]) { display: none; }
+    }
+  }
+}
+
+/* paper: an invoice or statement on warm paper, serif, with the caption as
+   its title and summary rows (Subtotal, Tax, Total) set apart at the foot.
+   Always light: it is a sheet of paper.
+   Adapted from examples/invoice.cssv in CSSV, MIT; see NOTICE. */
+@layer tableskin.skin {
+  [data-skin~="paper"] {
+    --ink: #1c1917;
+    --muted: #78716c;
+    --rule: #e9e2d8;
+    --accent: #b45309;
+    color-scheme: light;
+    margin: 0.5rem 0.25rem 2rem;
+    padding: 2rem 1.25rem 1.25rem;
+    border-top: 6px solid var(--accent);
+    border-radius: 6px;
+    background: linear-gradient(#fffdf9, #fbf6ee);
+    box-shadow: 0 1px 2px rgb(41 37 36 / 0.08), 0 14px 28px -14px rgb(41 37 36 / 0.4);
+    color: var(--ink);
+    font: 15px/1.5 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+
+    & table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    & caption { padding: 0 0.6rem 1.4rem; font: italic 400 2.4rem/1.05 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; letter-spacing: -0.01em; }
+    & :is(th, td) { padding: 0.8em 0.6em; }
+    & thead th {
+      vertical-align: bottom;
+      border-bottom: 1.5px solid var(--ink);
+      color: var(--muted);
+      font-size: 0.7em;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    & tbody tr:not([data-total]) td { border-bottom: 1px solid var(--rule); }
+    & td:is([data-role="id"], [data-role="ordinal"]) {
+      color: var(--muted);
+      font: 0.8em/1.9 ui-monospace, Menlo, Consolas, monospace;
+      letter-spacing: 0.05em;
+    }
+    & td:is([data-role="prose"], [data-role="text"]) { color: var(--muted); }
+    & td:is([data-role="prose"], [data-role="text"])::first-line { color: var(--ink); font-weight: 600; }
+    & td[data-role="money"] { white-space: nowrap; }
+    & td[data-role="money"]:last-child { font-weight: 600; }
+    & td[data-role="money"].zero { color: var(--muted); font-weight: 400; text-decoration: line-through; }
+    & td[data-tone] { color: var(--tone); font-variant: small-caps; letter-spacing: 0.04em; }
+
+    /* Summary rows. */
+    & tr[data-total] td { padding-block: 0.35em; }
+    & tr[data-total] td::first-line { color: inherit; font-weight: inherit; }
+    & tr:not([data-total]) + tr[data-total] td { padding-top: 1.2em; }
+    & tr[data-total] td:not(.number) { color: var(--muted); font-variant: small-caps; letter-spacing: 0.06em; text-align: end; }
+    & tbody tr[data-total]:last-child td {
+      padding-top: 0.6em;
+      border-top: 2px solid var(--ink);
+      color: var(--accent);
+      font-size: 1.2em;
+      font-weight: 700;
+    }
+    & tbody tr[data-total]:last-child td:not(.number) { padding-top: 1.1em; color: var(--ink); font-size: 1em; }
+    & tbody tr[data-total]:last-child td:first-child:empty { border-top-color: transparent; }
+
+    @media print { margin: 0; box-shadow: none; background: none; }
+  }
+}
+
+/* splitflap: an airport departures board. Every character sits on its own
+   flap, rows flip in one after another, and statuses light up by tone:
+   green for good, amber for attention, red for trouble, which also dims
+   the rest of that row. Always dark.
+   Adapted from site/split-flap.css in CSSV, MIT; see NOTICE. The original
+   staggers rows with an nth-child ladder; here --i and --j do it. */
+@layer tableskin.skin {
+  [data-skin~="splitflap"] {
+    --pitch: 1.32ch;                     /* one flap: a character plus the gap */
+    --board: #0c0c0f;
+    --flap-top: #2a2a30;
+    --flap-bottom: #212126;
+    --ink: #f6f1e1;
+    --amber: #fbbf24;
+    color-scheme: dark;
+    box-sizing: border-box;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 0 1.5em;
+    padding: 1.4em 1.1em 1.2em;
+    border-radius: 18px;
+    color: var(--ink);
+    font: 700 clamp(9px, 1.55vw, 17px)/1 ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    background:
+      radial-gradient(circle at 14px 14px, #3a3a42 2.5px, transparent 3.5px),
+      radial-gradient(circle at calc(100% - 14px) 14px, #3a3a42 2.5px, transparent 3.5px),
+      radial-gradient(circle at 14px calc(100% - 14px), #3a3a42 2.5px, transparent 3.5px),
+      radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), #3a3a42 2.5px, transparent 3.5px),
+      linear-gradient(172deg, rgb(255 255 255 / 0.07), transparent 42%),
+      var(--board);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07), inset 0 -14px 30px rgb(0 0 0 / 0.6);
+
+    & table {
+      border-collapse: separate;
+      border-spacing: 0 0.42em;
+      letter-spacing: calc(var(--pitch) - 1ch);
+      text-transform: uppercase;
+    }
+    & caption {
+      padding: 0.2em 0.26em 0.5em;
+      color: var(--amber);
+      font-size: 2.1em;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+      text-shadow: 0 0 0.8em rgb(251 191 36 / 0.45);
+    }
+    & th {
+      padding: 0 0.55em 0.5em;
+      color: rgb(246 241 225 / 0.42);
+      font-size: 0.62em;
+      font-weight: 600;
+      text-align: start;
+    }
+
+    /* The flaps: a gap every --pitch, a split line and two shades. */
+    & td {
+      padding: 0 0.55em;
+      line-height: 2.3;
+      text-align: start;
+      white-space: pre;
+      background:
+        repeating-linear-gradient(90deg, transparent 0 calc(var(--pitch) - 0.16ch), var(--board) 0 var(--pitch)),
+        linear-gradient(transparent calc(50% - 0.75px), rgb(0 0 0 / 0.75) 0 calc(50% + 0.75px), transparent 0),
+        linear-gradient(var(--flap-top) 50%, var(--flap-bottom) 50%);
+      background-position: -0.08ch 0, 0 0, 0 0;
+      background-origin: content-box;
+      background-clip: content-box;
+      text-shadow: 0 0 0.7em rgb(255 240 200 / 0.28);
+    }
+    & td:first-child { color: var(--amber); }
+
+    /* Statuses by tone; signed numbers as status codes. */
+    & td[data-tone="good"], & td.zero[data-signed] { color: #4ade80; text-shadow: 0 0 0.7em rgb(74 222 128 / 0.5); }
+    & td[data-tone="warn"], & td.positive[data-signed] { color: var(--amber); text-shadow: 0 0 0.7em rgb(251 191 36 / 0.45); }
+    & td[data-tone="bad"] { color: #f87171; text-shadow: 0 0 0.7em rgb(248 113 113 / 0.5); }
+    & td.negative[data-signed] { color: #38bdf8; text-shadow: 0 0 0.7em rgb(56 189 248 / 0.5); }
+    & tr:has(td[data-tone="bad"]) td:not([data-tone]) { opacity: 0.38; }
+
+    /* Rows flip in one after another, each cell a beat after the last. */
+    & tbody td {
+      animation: tableskin-flap 0.5s ease-out both;
+      animation-delay: calc(min(var(--i, 0), 12) * 85ms + min(var(--j, 0), 6) * 40ms);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      & tbody td { animation: none; }
+    }
+  }
+}
+@keyframes tableskin-flap {
+  0%   { transform: perspective(24em) rotateX(-90deg); filter: brightness(2); }
+  65%  { transform: perspective(24em) rotateX(14deg); }
+  100% { transform: none; }
+}
+
+/* board: a kanban board. One lane per status (or category), cards stacked
+   in file order: the title on top, then labels, the id, numbers as pills and
+   the person. Lanes run in tone order: not started, in flight, trouble, done.
+   Adapted from examples/jira-export.cssv in CSSV, MIT; see NOTICE. The
+   original hard-codes Jira's four lanes; here the lanes come from the data. */
+@layer tableskin.skin {
+  [data-skin~="board"] {
+    --card: light-dark(#fff, #22272b);
+    --chip: light-dark(#dfe1e6, #2c333a);
+    --muted: light-dark(#5e6c84, #8c9bab);
+    padding: 14px;
+    border-radius: 12px;
+    background: light-dark(#f4f5f7, #1d2125);
+    color: light-dark(#172b4d, #b6c2cf);
+    font: 13px/1.4 system-ui, sans-serif;
+
+    & table {
+      display: grid;
+      grid-template-columns: repeat(var(--groups, 1), minmax(11rem, 1fr));
+      grid-auto-flow: dense;
+      gap: 8px 10px;
+      width: 100%;
+    }
+    & caption { grid-column: 1 / -1; padding: 0 2px 4px; font-size: 15px; font-weight: 700; }
+    & colgroup, & thead { display: none; }
+    & tbody { display: contents; }
+
+    /* A card. The first card in each lane carries the lane's title. */
+    & tbody tr {
+      grid-column: var(--group);
+      position: relative;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      padding: 10px;
+      border-radius: 4px;
+      background: var(--card);
+      box-shadow: 0 1px 1px rgb(9 30 66 / 0.25);
+    }
+    & tbody tr[data-group-start] { margin-top: 2.1em; }
+    & tbody tr[data-group-start]::before {
+      content: attr(data-group);
+      position: absolute;
+      bottom: calc(100% + 0.8em);
+      left: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    & td { display: block; padding: 0; white-space: normal; }
+    & td:is(:empty, [data-na], [data-grouping], [data-role="date"], [data-role="datetime"], [data-role="time"], [data-role="url"], [data-role="email"]) { display: none; }
+    & td[data-primary] { order: -1; flex-basis: 100%; font-weight: 500; }
+    & td:is([data-role="prose"], [data-role="text"]):not([data-primary]) { flex-basis: 100%; color: var(--muted); font-size: 12px; }
+    & td:is([data-role="label"], [data-role="status"]) {
+      padding: 1px 6px;
+      border-radius: 3px;
+      background: hsl(var(--hue) 60% 50% / 0.18);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    & td[data-role="id"] { order: 1; margin-right: auto; color: var(--muted); font-size: 12px; }
+    & td.number { order: 2; min-width: 22px; padding: 0 6px; border-radius: 11px; background: var(--chip); font-size: 12px; text-align: center; }
+    & td[data-role="person"] { order: 3; color: var(--muted); font-size: 12px; }
+
+    & tr:has(td[data-grouping][data-tone="good"]) td[data-primary] { color: var(--muted); text-decoration: line-through; }
+    & tr:has(td[data-grouping][data-tone="bad"]) { box-shadow: inset 3px 0 var(--bad), 0 1px 1px rgb(9 30 66 / 0.25); }
+  }
+}
+
+/* chat: a messaging app. One bubble per row, the person's name in their own
+   color, a run of messages from one person grouped under one name and tail,
+   lines with no person (system notices) centered. Pass --me to put one
+   person's messages on the right. Follows the page's light or dark theme.
+   Adapted from examples/whatsapp-chat.cssv in CSSV, MIT; see NOTICE. The
+   original names each person; here --hue and data-run do it for anyone. */
+@layer tableskin.skin {
+  [data-skin~="chat"] {
+    --in: light-dark(#fff, #202c33);
+    --mine: light-dark(#d9fdd3, #005c4b);
+    --chip: light-dark(#fff, #182229);
+    --muted: light-dark(#667781, #8696a0);
+    box-sizing: border-box;
+    width: min(100%, 440px);
+    margin: 0 auto;
+    padding: 10px 18px 16px;
+    border-radius: 12px;
+    background: light-dark(#efeae2, #0b141a);
+    color: light-dark(#111b21, #e9edef);
+    font: 14px/1.35 system-ui, sans-serif;
+
+    & table { display: block; }
+    & caption { display: block; padding: 4px 0 6px; color: var(--muted); font-size: 12.5px; text-align: center; }
+    & colgroup, & thead { display: none; }
+    & tbody { display: flex; flex-direction: column; align-items: flex-start; }
+
+    /* A bubble with a tail, the name on top, the time in the corner. */
+    & tr {
+      --who: light-dark(hsl(var(--hue, 210) 70% 36%), hsl(var(--hue, 210) 75% 70%));
+      position: relative;
+      max-width: 80%;
+      margin-top: 10px;
+      padding: 6px 8px 8px 9px;
+      border-radius: 0 8px 8px;
+      background: var(--in);
+      box-shadow: 0 1px 0.5px rgb(11 20 26 / 0.13);
+    }
+    & tr::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -8px;
+      width: 8px;
+      height: 13px;
+      background: inherit;
+      clip-path: polygon(0 0, 100% 0, 100% 100%);
+    }
+    & td { display: none; padding: 0; }
+    & td[data-role="person"] { display: block; color: var(--who); font-size: 13px; font-weight: 600; }
+    & td[data-primary] { display: inline; overflow-wrap: anywhere; white-space: pre-wrap; }
+    & td[data-primary]::after { content: ""; display: inline-block; width: 42px; }
+    & td:is([data-role="time"], [data-role="datetime"]) {
+      display: block;
+      position: absolute;
+      right: 8px;
+      bottom: 4px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    /* A run from one person: no name, no tail, closer together. */
+    & tr[data-key]:not([data-run]) { margin-top: 2px; border-radius: 8px; }
+    & tr[data-key]:not([data-run])::before, & tr[data-key]:not([data-run]) td[data-role="person"] { display: none; }
+
+    /* My messages go right. */
+    & tr[data-me] { --muted: light-dark(#667781, #ffffff99); align-self: flex-end; border-radius: 8px 0 8px 8px; background: var(--mine); }
+    & tr[data-me]::before { left: auto; right: -8px; clip-path: polygon(0 0, 100% 0, 0 100%); }
+    & tr[data-me] td[data-role="person"] { display: none; }
+
+    /* Lines with no person are the app's own, centered. */
+    & tr:not([data-key]) {
+      align-self: center;
+      max-width: 90%;
+      padding: 5px 12px;
+      border-radius: 8px;
+      background: var(--chip);
+      color: var(--muted);
+      font-size: 12.5px;
+      text-align: center;
+    }
+    & tr:not([data-key])::before, & tr:not([data-key]) td:is([data-role="time"], [data-role="datetime"]), & tr:not([data-key]) td[data-primary]::after { display: none; }
+  }
+}
+
+/* heat (modifier): shade every measure cell by where it sits in its column.
+   Unsigned columns run from clear to orange; signed columns go blue below
+   zero and orange above, by size. Combine with a skin: "clean heat". */
+@layer tableskin.mod {
+  [data-skin~="heat"] {
+    --heat: light-dark(#ea580c, #f97316);
+    --cool: light-dark(#2563eb, #3b82f6);
+    & td:is([data-role="number"], [data-role="money"], [data-role="percent"]) {
+      background-color: color-mix(in oklab, var(--heat) calc(var(--t, 0) * 50%), transparent);
+    }
+    & td.positive[data-signed] { background-color: color-mix(in oklab, var(--heat) calc(var(--mag) * 50%), transparent); }
+    & td.negative[data-signed] { background-color: color-mix(in oklab, var(--cool) calc(var(--mag) * 50%), transparent); }
+    & td.zero[data-signed] { background-color: transparent; }
+  }
+}
+
+/* bars (modifier): a thin bar under every measure, as long as the value is
+   against the column's largest, red for negatives. Combine with a skin:
+   "clean bars", "ledger bars". */
+@layer tableskin.mod {
+  [data-skin~="bars"] {
+    --bar: light-dark(#2563eb, #60a5fa);
+    --bar-neg: light-dark(#dc2626, #f87171);
+    & td:is([data-role="number"], [data-role="money"], [data-role="percent"]) {
+      background-image: linear-gradient(color-mix(in srgb, var(--bar) 75%, transparent) 0 0);
+      background-repeat: no-repeat;
+      background-position: right 0.9em bottom 0.3em;
+      background-size: calc(var(--mag, 0) * (100% - 1.8em)) 3px;
+    }
+    & td.negative[data-signed] { background-image: linear-gradient(color-mix(in srgb, var(--bar-neg) 75%, transparent) 0 0); }
+  }
+}
+
+</style>
+</head>
+<body>
+<button class="theme" type="button">Theme: auto</button>
+<main>
+<h1>Tableskin gallery</h1>
+<p class="lede">Sample tables, each in the skin tableskin.py picked for it. The menu swaps the skin on the same markup. Skins and the table-model idea are adapted from CSSV by Rodrigo Paiva (MIT).</p>
+<section><header><h2>transactions.csv</h2><p>Picked <b>ledger</b>: money or signed amounts over dates read as a ledger.</p><label>Try <select data-for="transactions.csv"><option>clean</option><option selected>ledger</option><option>paper</option><option>splitflap</option><option>board</option><option>chat</option><option>clean heat</option><option>clean bars</option><option>ledger bars</option></select></label></header><div class="tableskin" data-skin="ledger"><table data-rows="10" data-cols="6" style="--rows:10;--cols:6;--groups:7"><caption>September transactions</caption><colgroup><col data-col="date" data-role="date"><col data-col="id" data-role="id"><col data-col="description" data-role="text"><col data-col="category" data-role="label"><col data-col="amount" data-role="money"><col data-col="balance" data-role="money"></colgroup><thead><tr data-row="1"><th data-col="date" data-role="date" style="--j:0">date</th><th data-col="id" data-role="id" style="--j:1">id</th><th data-col="description" data-role="text" data-primary style="--j:2">description</th><th data-col="category" data-role="label" data-grouping style="--j:3">category</th><th data-col="amount" data-role="money" class="number" data-signed style="--j:4">amount</th><th data-col="balance" data-role="money" class="number" style="--j:5">balance</th></tr></thead><tbody><tr data-row="2" data-key="TX-4060" data-run="start" data-group="dining" data-group-start style="--i:0;--group:1;--hue:210"><td data-col="date" data-role="date" style="--j:0">2026-09-30</td><td data-col="id" data-role="id" style="--j:1">TX-4060</td><td data-col="description" data-role="text" data-primary style="--j:2">Noodle Bar</td><td data-col="category" data-role="label" data-grouping data-tag="dining" style="--j:3;--hue:210">dining</td><td data-col="amount" data-role="money" class="number negative" data-signed style="--j:4;--t:0.267;--mag:0.008">-26.10</td><td data-col="balance" data-role="money" class="number positive" style="--j:5;--t:0.99;--mag:0.992">4090.22</td></tr><tr data-row="3" data-key="TX-4059" data-run="start" data-group="transport" data-group-start style="--i:1;--group:2;--hue:348"><td data-col="date" data-role="date" style="--j:0">2026-09-28</td><td data-col="id" data-role="id" style="--j:1">TX-4059</td><td data-col="description" data-role="text" data-primary style="--j:2">City Bikes</td><td data-col="category" data-role="label" data-grouping data-tag="transport" style="--j:3;--hue:348">transport</td><td data-col="amount" data-role="money" class="number negative" data-signed style="--j:4;--t:0.271;--mag:0.002">-5.48</td><td data-col="balance" data-role="money" class="number positive" style="--j:5;--t:0.998;--mag:0.999">4116.32</td></tr><tr data-row="4" data-key="TX-4058" data-run="start" data-group="income" data-group-start style="--i:2;--group:3;--hue:125"><td data-col="date" data-role="date" style="--j:0">2026-09-26</td><td data-col="id" data-role="id" style="--j:1">TX-4058</td><td data-col="description" data-role="text" data-primary style="--j:2">Salary</td><td data-col="category" data-role="label" data-grouping data-tag="income" style="--j:3;--hue:125">income</td><td data-col="amount" data-role="money" class="number positive" data-signed style="--j:4;--t:1;--mag:1">3200.00</td><td data-col="balance" data-role="money" class="number positive" style="--j:5;--t:1;--mag:1">4121.80</td></tr><tr data-row="5" data-key="TX-4057" data-run="start" data-group="leisure" data-group-start style="--i:3;--group:4;--hue:263"><td data-col="date" data-role="date" style="--j:0">2026-09-25</td><td data-col="id" data-role="id" style="--j:1">TX-4057</td><td data-col="description" data-role="text" data-primary style="--j:2">Cinema</td><td data-col="category" data-role="label" data-grouping data-tag="leisure" style="--j:3;--hue:263">leisure</td><td data-col="amount" data-role="money" class="number negative" data-signed style="--j:4;--t:0.27;--mag:0.004">-11.89</td><td data-col="balance" data-role="money" class="number positive" style="--j:5;--t:0.02;--mag:0.224">921.80</td></tr><tr data-row="6" data-key="TX-4056" data-run="start" data-group="groceries" data-group-start style="--i:4;--group:5;--hue:40"><td data-col="date" data-role="date" style="--j:0">2026-09-24</td><td data-col="id" data-role="id" style="--j:1">TX-4056</td><td data-col="description" data-role="text" data-primary style="--j:2">Corner Market</td><td data-col="category" data-role="label" data-grouping data-tag="groceries" style="--j:3;--hue:40">groceries</td><td data-col="amount" data-role="money" class="number negative" data-signed style="--j:4;--t:0.27;--mag:0.004">-11.74</td><td data-col="balance" data-role="money" class="number positive" style="--j:5;--t:0.024;--mag:0.227">933.69</td></tr><tr data-row="7" data-key="TX-4055" data-run="start" data-group="income" style="--i:5;--group:3;--hue:178"><td data-col="date" data-role="date" style="--j:0">2026-09-23</td><td data-col="id" data-role="id" style="--j:1">TX-4055</td><td data-col="description" data-role="text" data-primary style="--j:2">Refund: headphones</td><td data-col="category" data-role="label" data-grouping data-tag="income" style="--j:3;--hue:125">income</td><td data-col="amount" data-role="money" class="number positive" data-signed style="--j:4;--t:0.293;--mag:0.028">89.00</td><td data-col="balance" data-role="money" class="number positive" style="--j:5;--t:0.027;--mag:0.229">945.43</td></tr><tr data-row="8" data-key="TX-4054" data-run="start" data-group="groceries" style="--i:6;--group:5;--hue:315"><td data-col="date" data-role="date" style="--j:0">2026-09-22</td><td data-col="id" data-role="id" style="--j:1">TX-4054</td><td data-col="description" data-role="text" data-primary style="--j:2">Corner Market</td><td data-col="category" data-role="label" data-grouping data-tag="groceries" style="--j:3;--hue:40">groceries</td><td data-col="amount" data-role="money" class="number negative" data-signed style="--j:4;--t:0.264;--mag:0.013">-40.14</td><td data-col="balance" data-role="money" class="number positive" style="--j:5;--t:0;--mag:0.208">856.43</td></tr><tr data-row="9" data-key="TX-4053" data-run="start" data-group="utilities" data-group-start style="--i:7;--group:6;--hue:93"><td data-col="date" data-role="date" style="--j:0">2026-09-20</td><td data-col="id" data-role="id" style="--j:1">TX-4053</td><td data-col="description" data-role="text" data-primary style="--j:2">Electric company</td><td data-col="category" data-role="label" data-grouping data-tag="utilities" style="--j:3;--hue:178">utilities</td><td data-col="amount" data-role="money" class="number negative" data-signed style="--j:4;--t:0.256;--mag:0.023">-72.30</td><td data-col="balance" data-role="money" class="number positive" style="--j:5;--t:0.012;--mag:0.218">896.57</td></tr><tr data-row="10" data-key="TX-4052" data-run="start" data-group="dining" style="--i:8;--group:1;--hue:230"><td data-col="date" data-role="date" style="--j:0">2026-09-18</td><td data-col="id" data-role="id" style="--j:1">TX-4052</td><td data-col="description" data-role="text" data-primary style="--j:2">Noodle Bar</td><td data-col="category" data-role="label" data-grouping data-tag="dining" style="--j:3;--hue:210">dining</td><td data-col="amount" data-role="money" class="number negative" data-signed style="--j:4;--t:0.269;--mag:0.006">-18.60</td><td data-col="balance" data-role="money" class="number positive" style="--j:5;--t:0.034;--mag:0.235">968.87</td></tr><tr data-row="11" data-key="TX-4051" data-run="start" data-group="housing" data-group-start style="--i:9;--group:7;--hue:8"><td data-col="date" data-role="date" style="--j:0">2026-09-15</td><td data-col="id" data-role="id" style="--j:1">TX-4051</td><td data-col="description" data-role="text" data-primary style="--j:2">Rent</td><td data-col="category" data-role="label" data-grouping data-tag="housing" style="--j:3;--hue:315">housing</td><td data-col="amount" data-role="money" class="number negative" data-signed style="--j:4;--t:0;--mag:0.375">-1200.00</td><td data-col="balance" data-role="money" class="number positive" style="--j:5;--t:0.04;--mag:0.24">987.47</td></tr></tbody></table></div></section>
+<section><header><h2>invoice.csv</h2><p>Picked <b>paper</b>: money with total rows reads as an invoice or statement.</p><label>Try <select data-for="invoice.csv"><option>clean</option><option>ledger</option><option selected>paper</option><option>splitflap</option><option>board</option><option>chat</option><option>clean heat</option><option>clean bars</option><option>ledger bars</option></select></label></header><div class="tableskin" data-skin="paper"><table data-rows="8" data-cols="5" style="--rows:8;--cols:5"><caption>Invoice 2026-114</caption><colgroup><col data-col="sku" data-role="id"><col data-col="description" data-role="prose"><col data-col="qty" data-role="number"><col data-col="unit price" data-role="money"><col data-col="amount" data-role="money"></colgroup><thead><tr data-row="1"><th data-col="sku" data-role="id" style="--j:0">sku</th><th data-col="description" data-role="prose" data-primary style="--j:1">description</th><th data-col="qty" data-role="number" class="number" style="--j:2">qty</th><th data-col="unit price" data-role="money" class="number" style="--j:3">unit price</th><th data-col="amount" data-role="money" class="number" style="--j:4">amount</th></tr></thead><tbody><tr data-row="2" data-key="0042" data-run="start" style="--i:0;--hue:210"><td data-col="sku" data-role="id" style="--j:0">0042</td><td data-col="description" data-role="prose" data-primary style="--j:1">Brand workshop
+Two half-day sessions, on site</td><td data-col="qty" data-role="number" class="number positive" style="--j:2;--t:0.043;--mag:0.083">2</td><td data-col="unit price" data-role="money" class="number positive" style="--j:3;--t:0.316;--mag:0.316">$1,200.00</td><td data-col="amount" data-role="money" class="number positive" style="--j:4;--t:0.15;--mag:0.15">$2,400.00</td></tr><tr data-row="3" data-key="0108" data-run="start" style="--i:1;--hue:348"><td data-col="sku" data-role="id" style="--j:0">0108</td><td data-col="description" data-role="prose" data-primary style="--j:1">Logo system
+Primary mark, monogram, usage guide</td><td data-col="qty" data-role="number" class="number positive" style="--j:2;--t:0;--mag:0.042">1</td><td data-col="unit price" data-role="money" class="number positive" style="--j:3;--t:1;--mag:1">$3,800.00</td><td data-col="amount" data-role="money" class="number positive" style="--j:4;--t:0.237;--mag:0.237">$3,800.00</td></tr><tr data-row="4" data-key="0213" data-run="start" style="--i:2;--hue:125"><td data-col="sku" data-role="id" style="--j:0">0213</td><td data-col="description" data-role="prose" data-primary style="--j:1">Page templates
+Twelve layouts for the website</td><td data-col="qty" data-role="number" class="number positive" style="--j:2;--t:0.478;--mag:0.5">12</td><td data-col="unit price" data-role="money" class="number positive" style="--j:3;--t:0.142;--mag:0.142">$540.00</td><td data-col="amount" data-role="money" class="number positive" style="--j:4;--t:0.405;--mag:0.405">$6,480.00</td></tr><tr data-row="5" data-key="0315" data-run="start" style="--i:3;--hue:263"><td data-col="sku" data-role="id" style="--j:0">0315</td><td data-col="description" data-role="prose" data-primary style="--j:1">Illustration set
+Twenty-four spot drawings</td><td data-col="qty" data-role="number" class="number positive" style="--j:2;--t:1;--mag:1">24</td><td data-col="unit price" data-role="money" class="number positive" style="--j:3;--t:0.025;--mag:0.025">$95.00</td><td data-col="amount" data-role="money" class="number positive" style="--j:4;--t:0.142;--mag:0.142">$2,280.00</td></tr><tr data-row="6" data-key="0400" data-run="start" style="--i:4;--hue:40"><td data-col="sku" data-role="id" style="--j:0">0400</td><td data-col="description" data-role="prose" data-primary style="--j:1">Rush delivery
+Waived for repeat clients</td><td data-col="qty" data-role="number" class="number positive" style="--j:2;--t:0;--mag:0.042">1</td><td data-col="unit price" data-role="money" class="number zero" style="--j:3;--t:0;--mag:0">$0.00</td><td data-col="amount" data-role="money" class="number zero" style="--j:4;--t:0;--mag:0">$0.00</td></tr><tr data-row="7" data-total style="--i:5"><td data-col="sku" data-role="id" style="--j:0"></td><td data-col="description" data-role="prose" data-primary style="--j:1">Subtotal</td><td data-col="qty" data-role="number" style="--j:2"></td><td data-col="unit price" data-role="money" style="--j:3"></td><td data-col="amount" data-role="money" class="number positive" style="--j:4;--t:0.935;--mag:0.935">$14,960.00</td></tr><tr data-row="8" data-total style="--i:6"><td data-col="sku" data-role="id" style="--j:0"></td><td data-col="description" data-role="prose" data-primary style="--j:1">Sales tax 7%</td><td data-col="qty" data-role="number" style="--j:2"></td><td data-col="unit price" data-role="money" style="--j:3"></td><td data-col="amount" data-role="money" class="number positive" style="--j:4;--t:0.065;--mag:0.065">$1,047.20</td></tr><tr data-row="9" data-total style="--i:7"><td data-col="sku" data-role="id" style="--j:0"></td><td data-col="description" data-role="prose" data-primary style="--j:1">Total due</td><td data-col="qty" data-role="number" style="--j:2"></td><td data-col="unit price" data-role="money" style="--j:3"></td><td data-col="amount" data-role="money" class="number positive" style="--j:4;--t:1;--mag:1">$16,007.20</td></tr></tbody></table></div></section>
+<section><header><h2>departures.csv</h2><p>Picked <b>splitflap</b>: a short list of short values with times or statuses fits a departures board.</p><label>Try <select data-for="departures.csv"><option>clean</option><option>ledger</option><option>paper</option><option selected>splitflap</option><option>board</option><option>chat</option><option>clean heat</option><option>clean bars</option><option>ledger bars</option></select></label></header><div class="tableskin" data-skin="splitflap"><table data-rows="7" data-cols="5" style="--rows:7;--cols:5;--groups:4"><caption>Departures</caption><colgroup><col data-col="time" data-role="time"><col data-col="flight" data-role="id"><col data-col="destination" data-role="text"><col data-col="gate" data-role="id"><col data-col="status" data-role="status"></colgroup><thead><tr data-row="1"><th data-col="time" data-role="time" style="--j:0">time</th><th data-col="flight" data-role="id" style="--j:1">flight</th><th data-col="destination" data-role="text" data-primary style="--j:2">destination</th><th data-col="gate" data-role="id" style="--j:3">gate</th><th data-col="status" data-role="status" data-grouping style="--j:4">status</th></tr></thead><tbody><tr data-row="2" data-key="LH 441" data-run="start" data-group="On time" data-group-start style="--i:0;--group:4;--hue:210"><td data-col="time" data-role="time" style="--j:0">08:15</td><td data-col="flight" data-role="id" style="--j:1">LH 441</td><td data-col="destination" data-role="text" data-primary style="--j:2">Frankfurt</td><td data-col="gate" data-role="id" style="--j:3">B07</td><td data-col="status" data-role="status" data-grouping data-tone="good" data-tag="on-time" style="--j:4;--hue:210">On time</td></tr><tr data-row="3" data-key="DL 92" data-run="start" data-group="Boarding" data-group-start style="--i:1;--group:1;--hue:348"><td data-col="time" data-role="time" style="--j:0">08:40</td><td data-col="flight" data-role="id" style="--j:1">DL 92</td><td data-col="destination" data-role="text" data-primary style="--j:2">Atlanta</td><td data-col="gate" data-role="id" style="--j:3">A12</td><td data-col="status" data-role="status" data-grouping data-tone="warn" data-tag="boarding" style="--j:4;--hue:348">Boarding</td></tr><tr data-row="4" data-key="BA 217" data-run="start" data-group="Delayed" data-group-start style="--i:2;--group:2;--hue:125"><td data-col="time" data-role="time" style="--j:0">09:05</td><td data-col="flight" data-role="id" style="--j:1">BA 217</td><td data-col="destination" data-role="text" data-primary style="--j:2">London</td><td data-col="gate" data-role="id" style="--j:3">C03</td><td data-col="status" data-role="status" data-grouping data-tone="warn" data-tag="delayed" style="--j:4;--hue:125">Delayed</td></tr><tr data-row="5" data-key="AF 1683" data-run="start" data-group="On time" style="--i:3;--group:4;--hue:263"><td data-col="time" data-role="time" style="--j:0">09:20</td><td data-col="flight" data-role="id" style="--j:1">AF 1683</td><td data-col="destination" data-role="text" data-primary style="--j:2">Paris</td><td data-col="gate" data-role="id" style="--j:3">B11</td><td data-col="status" data-role="status" data-grouping data-tone="good" data-tag="on-time" style="--j:4;--hue:210">On time</td></tr><tr data-row="6" data-key="UA 908" data-run="start" data-group="Cancelled" data-group-start style="--i:4;--group:3;--hue:40"><td data-col="time" data-role="time" style="--j:0">09:45</td><td data-col="flight" data-role="id" style="--j:1">UA 908</td><td data-col="destination" data-role="text" data-primary style="--j:2">Denver</td><td data-col="gate" data-role="id" style="--j:3">A04</td><td data-col="status" data-role="status" data-grouping data-tone="bad" data-tag="cancelled" style="--j:4;--hue:263">Cancelled</td></tr><tr data-row="7" data-key="KL 644" data-run="start" data-group="On time" style="--i:5;--group:4;--hue:178"><td data-col="time" data-role="time" style="--j:0">10:10</td><td data-col="flight" data-role="id" style="--j:1">KL 644</td><td data-col="destination" data-role="text" data-primary style="--j:2">Amsterdam</td><td data-col="gate" data-role="id" style="--j:3">C09</td><td data-col="status" data-role="status" data-grouping data-tone="good" data-tag="on-time" style="--j:4;--hue:210">On time</td></tr><tr data-row="8" data-key="AA 2210" data-run="start" data-group="Delayed" style="--i:6;--group:2;--hue:315"><td data-col="time" data-role="time" style="--j:0">10:35</td><td data-col="flight" data-role="id" style="--j:1">AA 2210</td><td data-col="destination" data-role="text" data-primary style="--j:2">Charlotte</td><td data-col="gate" data-role="id" style="--j:3">A19</td><td data-col="status" data-role="status" data-grouping data-tone="warn" data-tag="delayed" style="--j:4;--hue:125">Delayed</td></tr></tbody></table></div></section>
+<section><header><h2>sprint.csv</h2><p>Picked <b>board</b>: a status column with 4 values and long titles make a board.</p><label>Try <select data-for="sprint.csv"><option>clean</option><option>ledger</option><option>paper</option><option>splitflap</option><option selected>board</option><option>chat</option><option>clean heat</option><option>clean bars</option><option>ledger bars</option></select></label></header><div class="tableskin" data-skin="board"><table data-rows="10" data-cols="6" style="--rows:10;--cols:6;--groups:4"><caption>Sprint 15</caption><colgroup><col data-col="key" data-role="id"><col data-col="summary" data-role="prose"><col data-col="status" data-role="status"><col data-col="assignee" data-role="person"><col data-col="points" data-role="number"><col data-col="labels" data-role="label"></colgroup><thead><tr data-row="1"><th data-col="key" data-role="id" style="--j:0">key</th><th data-col="summary" data-role="prose" data-primary style="--j:1">summary</th><th data-col="status" data-role="status" data-grouping style="--j:2">status</th><th data-col="assignee" data-role="person" style="--j:3">assignee</th><th data-col="points" data-role="number" class="number" style="--j:4">points</th><th data-col="labels" data-role="label" style="--j:5">labels</th></tr></thead><tbody><tr data-row="2" data-key="WEB-214" data-run="start" data-group="In Progress" data-group-start style="--i:0;--group:2;--hue:210"><td data-col="key" data-role="id" style="--j:0">WEB-214</td><td data-col="summary" data-role="prose" data-primary style="--j:1">Checkout fails when the cart has more than 99 items</td><td data-col="status" data-role="status" data-grouping data-tone="warn" data-tag="in-progress" style="--j:2;--hue:210">In Progress</td><td data-col="assignee" data-role="person" data-tag="ana-sousa" style="--j:3;--hue:210">Ana Sousa</td><td data-col="points" data-role="number" class="number positive" style="--j:4;--t:0.286;--mag:0.375">3</td><td data-col="labels" data-role="label" data-tag="checkout" style="--j:5;--hue:210">checkout</td></tr><tr data-row="3" data-key="WEB-209" data-run="start" data-group="To Do" data-group-start style="--i:1;--group:1;--hue:348"><td data-col="key" data-role="id" style="--j:0">WEB-209</td><td data-col="summary" data-role="prose" data-primary style="--j:1">Add dark mode to the account pages</td><td data-col="status" data-role="status" data-grouping data-tone="neutral" data-tag="to-do" style="--j:2;--hue:348">To Do</td><td data-col="assignee" data-role="person" style="--j:3"></td><td data-col="points" data-role="number" class="number positive" style="--j:4;--t:0.571;--mag:0.625">5</td><td data-col="labels" data-role="label" data-tag="design" style="--j:5;--hue:348">design</td></tr><tr data-row="4" data-key="WEB-205" data-run="start" data-group="In Review" data-group-start style="--i:2;--group:3;--hue:125"><td data-col="key" data-role="id" style="--j:0">WEB-205</td><td data-col="summary" data-role="prose" data-primary style="--j:1">Move image uploads to the new storage bucket</td><td data-col="status" data-role="status" data-grouping data-tone="warn" data-tag="in-review" style="--j:2;--hue:125">In Review</td><td data-col="assignee" data-role="person" data-tag="dev-patel" style="--j:3;--hue:348">Dev Patel</td><td data-col="points" data-role="number" class="number positive" style="--j:4;--t:0.286;--mag:0.375">3</td><td data-col="labels" data-role="label" data-tag="infra" style="--j:5;--hue:125">infra</td></tr><tr data-row="5" data-key="WEB-211" data-run="start" data-group="To Do" style="--i:3;--group:1;--hue:263"><td data-col="key" data-role="id" style="--j:0">WEB-211</td><td data-col="summary" data-role="prose" data-primary style="--j:1">Password reset email goes to spam</td><td data-col="status" data-role="status" data-grouping data-tone="neutral" data-tag="to-do" style="--j:2;--hue:348">To Do</td><td data-col="assignee" data-role="person" style="--j:3"></td><td data-col="points" data-role="number" class="number positive" style="--j:4;--t:0.143;--mag:0.25">2</td><td data-col="labels" data-role="label" data-tag="email" style="--j:5;--hue:263">email</td></tr><tr data-row="6" data-key="WEB-198" data-run="start" data-group="Done" data-group-start style="--i:4;--group:4;--hue:40"><td data-col="key" data-role="id" style="--j:0">WEB-198</td><td data-col="summary" data-role="prose" data-primary style="--j:1">Search results page</td><td data-col="status" data-role="status" data-grouping data-tone="good" data-tag="done" style="--j:2;--hue:263">Done</td><td data-col="assignee" data-role="person" data-tag="ben-ito" style="--j:3;--hue:125">Ben Ito</td><td data-col="points" data-role="number" class="number positive" style="--j:4;--t:1;--mag:1">8</td><td data-col="labels" data-role="label" data-tag="frontend" style="--j:5;--hue:40">frontend</td></tr><tr data-row="7" data-key="WEB-207" data-run="start" data-group="In Progress" style="--i:5;--group:2;--hue:178"><td data-col="key" data-role="id" style="--j:0">WEB-207</td><td data-col="summary" data-role="prose" data-primary style="--j:1">Rate-limit the login endpoint</td><td data-col="status" data-role="status" data-grouping data-tone="warn" data-tag="in-progress" style="--j:2;--hue:210">In Progress</td><td data-col="assignee" data-role="person" data-tag="dev-patel" style="--j:3;--hue:348">Dev Patel</td><td data-col="points" data-role="number" class="number positive" style="--j:4;--t:0.143;--mag:0.25">2</td><td data-col="labels" data-role="label" data-tag="security" style="--j:5;--hue:178">security</td></tr><tr data-row="8" data-key="WEB-212" data-run="start" data-group="To Do" style="--i:6;--group:1;--hue:315"><td data-col="key" data-role="id" style="--j:0">WEB-212</td><td data-col="summary" data-role="prose" data-primary style="--j:1">Onboarding checklist for new teams</td><td data-col="status" data-role="status" data-grouping data-tone="neutral" data-tag="to-do" style="--j:2;--hue:348">To Do</td><td data-col="assignee" data-role="person" style="--j:3"></td><td data-col="points" data-role="number" class="number positive" style="--j:4;--t:1;--mag:1">8</td><td data-col="labels" data-role="label" data-tag="frontend" style="--j:5;--hue:40">frontend</td></tr><tr data-row="9" data-key="WEB-203" data-run="start" data-group="Done" style="--i:7;--group:4;--hue:93"><td data-col="key" data-role="id" style="--j:0">WEB-203</td><td data-col="summary" data-role="prose" data-primary style="--j:1">Footer links point to the old help center</td><td data-col="status" data-role="status" data-grouping data-tone="good" data-tag="done" style="--j:2;--hue:263">Done</td><td data-col="assignee" data-role="person" data-tag="caro-diaz" style="--j:3;--hue:263">Caro Diaz</td><td data-col="points" data-role="number" class="number positive" style="--j:4;--t:0;--mag:0.125">1</td><td data-col="labels" data-role="label" data-tag="content" style="--j:5;--hue:315">content</td></tr><tr data-row="10" data-key="WEB-200" data-run="start" data-group="In Review" style="--i:8;--group:3;--hue:230"><td data-col="key" data-role="id" style="--j:0">WEB-200</td><td data-col="summary" data-role="prose" data-primary style="--j:1">Export invoices as PDF</td><td data-col="status" data-role="status" data-grouping data-tone="warn" data-tag="in-review" style="--j:2;--hue:125">In Review</td><td data-col="assignee" data-role="person" data-tag="ana-sousa" style="--j:3;--hue:210">Ana Sousa</td><td data-col="points" data-role="number" class="number positive" style="--j:4;--t:0.571;--mag:0.625">5</td><td data-col="labels" data-role="label" data-tag="billing" style="--j:5;--hue:93">billing</td></tr><tr data-row="11" data-key="WEB-196" data-run="start" data-group="Done" style="--i:9;--group:4;--hue:8"><td data-col="key" data-role="id" style="--j:0">WEB-196</td><td data-col="summary" data-role="prose" data-primary style="--j:1">Upgrade the payment SDK</td><td data-col="status" data-role="status" data-grouping data-tone="good" data-tag="done" style="--j:2;--hue:263">Done</td><td data-col="assignee" data-role="person" data-tag="ben-ito" style="--j:3;--hue:125">Ben Ito</td><td data-col="points" data-role="number" class="number positive" style="--j:4;--t:0.286;--mag:0.375">3</td><td data-col="labels" data-role="label" data-tag="billing" style="--j:5;--hue:93">billing</td></tr></tbody></table></div></section>
+<section><header><h2>chat.csv</h2><p>Picked <b>chat</b>: a person column, a long-text column and timestamps read as a conversation.</p><label>Try <select data-for="chat.csv"><option>clean</option><option>ledger</option><option>paper</option><option>splitflap</option><option>board</option><option selected>chat</option><option>clean heat</option><option>clean bars</option><option>ledger bars</option></select></label></header><div class="tableskin" data-skin="chat"><table data-rows="11" data-cols="4" style="--rows:11;--cols:4"><colgroup><col data-col="date" data-role="date"><col data-col="time" data-role="time"><col data-col="sender" data-role="person"><col data-col="message" data-role="prose"></colgroup><thead><tr data-row="1"><th data-col="date" data-role="date" style="--j:0">date</th><th data-col="time" data-role="time" style="--j:1">time</th><th data-col="sender" data-role="person" style="--j:2">sender</th><th data-col="message" data-role="prose" data-primary style="--j:3">message</th></tr></thead><tbody><tr data-row="2" style="--i:0"><td data-col="date" data-role="date" style="--j:0">2026-10-04</td><td data-col="time" data-role="time" style="--j:1">08:02</td><td data-col="sender" data-role="person" style="--j:2"></td><td data-col="message" data-role="prose" data-primary style="--j:3">Ana created group "Saturday hike"</td></tr><tr data-row="3" data-key="Ana" data-run="start" style="--i:1;--hue:210"><td data-col="date" data-role="date" style="--j:0">2026-10-04</td><td data-col="time" data-role="time" style="--j:1">08:03</td><td data-col="sender" data-role="person" data-tag="ana" style="--j:2;--hue:210">Ana</td><td data-col="message" data-role="prose" data-primary style="--j:3">Morning! The trail is dry, sunny until 3</td></tr><tr data-row="4" data-key="Ana" style="--i:2;--hue:210"><td data-col="date" data-role="date" style="--j:0">2026-10-04</td><td data-col="time" data-role="time" style="--j:1">08:03</td><td data-col="sender" data-role="person" data-tag="ana" style="--j:2;--hue:210">Ana</td><td data-col="message" data-role="prose" data-primary style="--j:3">Meet at the station at 9:30?</td></tr><tr data-row="5" data-key="Ben" data-run="start" style="--i:3;--hue:348"><td data-col="date" data-role="date" style="--j:0">2026-10-04</td><td data-col="time" data-role="time" style="--j:1">08:05</td><td data-col="sender" data-role="person" data-tag="ben" style="--j:2;--hue:348">Ben</td><td data-col="message" data-role="prose" data-primary style="--j:3">I'm in</td></tr><tr data-row="6" data-key="Sam" data-me data-run="start" style="--i:4;--hue:125"><td data-col="date" data-role="date" style="--j:0">2026-10-04</td><td data-col="time" data-role="time" style="--j:1">08:06</td><td data-col="sender" data-role="person" data-tag="sam" style="--j:2;--hue:125">Sam</td><td data-col="message" data-role="prose" data-primary style="--j:3">Same. Who's bringing what?</td></tr><tr data-row="7" data-key="Chloé" data-run="start" style="--i:5;--hue:263"><td data-col="date" data-role="date" style="--j:0">2026-10-04</td><td data-col="time" data-role="time" style="--j:1">08:07</td><td data-col="sender" data-role="person" data-tag="chloé" style="--j:2;--hue:263">Chloé</td><td data-col="message" data-role="prose" data-primary style="--j:3">I can do sandwiches
+cheese, ham, one vegan</td></tr><tr data-row="8" data-key="Sam" data-me data-run="start" style="--i:6;--hue:125"><td data-col="date" data-role="date" style="--j:0">2026-10-04</td><td data-col="time" data-role="time" style="--j:1">08:10</td><td data-col="sender" data-role="person" data-tag="sam" style="--j:2;--hue:125">Sam</td><td data-col="message" data-role="prose" data-primary style="--j:3">Water and the first-aid kit, then</td></tr><tr data-row="9" data-key="Sam" data-me style="--i:7;--hue:125"><td data-col="date" data-role="date" style="--j:0">2026-10-04</td><td data-col="time" data-role="time" style="--j:1">08:10</td><td data-col="sender" data-role="person" data-tag="sam" style="--j:2;--hue:125">Sam</td><td data-col="message" data-role="prose" data-primary style="--j:3">And snacks, obviously</td></tr><tr data-row="10" data-key="Ben" data-run="start" style="--i:8;--hue:348"><td data-col="date" data-role="date" style="--j:0">2026-10-04</td><td data-col="time" data-role="time" style="--j:1">08:13</td><td data-col="sender" data-role="person" data-tag="ben" style="--j:2;--hue:348">Ben</td><td data-col="message" data-role="prose" data-primary style="--j:3">Running 10 min late, start without me and I'll catch up at the bridge</td></tr><tr data-row="11" data-key="Chloé" data-run="start" style="--i:9;--hue:263"><td data-col="date" data-role="date" style="--j:0">2026-10-04</td><td data-col="time" data-role="time" style="--j:1">08:14</td><td data-col="sender" data-role="person" data-tag="chloé" style="--j:2;--hue:263">Chloé</td><td data-col="message" data-role="prose" data-primary style="--j:3">"Start without me" ha. We'll wait</td></tr><tr data-row="12" data-key="Sam" data-me data-run="start" style="--i:10;--hue:125"><td data-col="date" data-role="date" style="--j:0">2026-10-04</td><td data-col="time" data-role="time" style="--j:1">08:15</td><td data-col="sender" data-role="person" data-tag="sam" style="--j:2;--hue:125">Sam</td><td data-col="message" data-role="prose" data-primary style="--j:3">See you all at 9:30</td></tr></tbody></table></div></section>
+<section><header><h2>ports.csv</h2><p>Picked <b>clean heat</b>: 4 of 7 columns are measures, so shade them as a heat map.</p><label>Try <select data-for="ports.csv"><option>clean</option><option>ledger</option><option>paper</option><option>splitflap</option><option>board</option><option>chat</option><option selected>clean heat</option><option>clean bars</option><option>ledger bars</option></select></label></header><div class="tableskin" data-skin="clean heat"><table data-rows="10" data-cols="7" style="--rows:10;--cols:7;--groups:3"><caption>Fabric A port utilization</caption><colgroup><col data-col="switch" data-role="label"><col data-col="port" data-role="ordinal"><col data-col="speed" data-role="number"><col data-col="state" data-role="status"><col data-col="tx util %" data-role="percent"><col data-col="rx util %" data-role="percent"><col data-col="crc errors" data-role="number"></colgroup><thead><tr data-row="1"><th data-col="switch" data-role="label" data-primary style="--j:0">switch</th><th data-col="port" data-role="ordinal" class="number" style="--j:1">port</th><th data-col="speed" data-role="number" class="number" style="--j:2">speed</th><th data-col="state" data-role="status" data-grouping style="--j:3">state</th><th data-col="tx util %" data-role="percent" class="number" style="--j:4">tx util %</th><th data-col="rx util %" data-role="percent" class="number" style="--j:5">rx util %</th><th data-col="crc errors" data-role="number" class="number" style="--j:6">crc errors</th></tr></thead><tbody><tr data-row="2" data-group="Online" data-group-start style="--i:0;--group:3"><td data-col="switch" data-role="label" data-primary data-tag="fab-a-01" style="--j:0;--hue:210">fab-a-01</td><td data-col="port" data-role="ordinal" class="number zero" style="--j:1">0</td><td data-col="speed" data-role="number" class="number positive" style="--j:2;--t:0.333;--mag:0.5">32G</td><td data-col="state" data-role="status" data-grouping data-tone="good" data-tag="online" style="--j:3;--hue:210">Online</td><td data-col="tx util %" data-role="percent" class="number positive" style="--j:4;--t:0.749;--mag:0.749">71.2</td><td data-col="rx util %" data-role="percent" class="number positive" style="--j:5;--t:0.694;--mag:0.694">64.8</td><td data-col="crc errors" data-role="number" class="number zero" style="--j:6;--t:0;--mag:0">0</td></tr><tr data-row="3" data-group="Online" style="--i:1;--group:3"><td data-col="switch" data-role="label" data-primary data-tag="fab-a-01" style="--j:0;--hue:210">fab-a-01</td><td data-col="port" data-role="ordinal" class="number positive" style="--j:1">1</td><td data-col="speed" data-role="number" class="number positive" style="--j:2;--t:0.333;--mag:0.5">32G</td><td data-col="state" data-role="status" data-grouping data-tone="good" data-tag="online" style="--j:3;--hue:210">Online</td><td data-col="tx util %" data-role="percent" class="number positive" style="--j:4;--t:0.932;--mag:0.932">88.5</td><td data-col="rx util %" data-role="percent" class="number positive" style="--j:5;--t:0.978;--mag:0.978">91.3</td><td data-col="crc errors" data-role="number" class="number zero" style="--j:6;--t:0;--mag:0">0</td></tr><tr data-row="4" data-group="Online" style="--i:2;--group:3"><td data-col="switch" data-role="label" data-primary data-tag="fab-a-01" style="--j:0;--hue:210">fab-a-01</td><td data-col="port" data-role="ordinal" class="number positive" style="--j:1">2</td><td data-col="speed" data-role="number" class="number positive" style="--j:2;--t:0.333;--mag:0.5">32G</td><td data-col="state" data-role="status" data-grouping data-tone="good" data-tag="online" style="--j:3;--hue:210">Online</td><td data-col="tx util %" data-role="percent" class="number positive" style="--j:4;--t:0.131;--mag:0.131">12.4</td><td data-col="rx util %" data-role="percent" class="number positive" style="--j:5;--t:0.106;--mag:0.106">9.9</td><td data-col="crc errors" data-role="number" class="number zero" style="--j:6;--t:0;--mag:0">0</td></tr><tr data-row="5" data-group="Degraded" data-group-start style="--i:3;--group:1"><td data-col="switch" data-role="label" data-primary data-tag="fab-a-01" style="--j:0;--hue:210">fab-a-01</td><td data-col="port" data-role="ordinal" class="number positive" style="--j:1">3</td><td data-col="speed" data-role="number" class="number positive" style="--j:2;--t:0;--mag:0.25">16G</td><td data-col="state" data-role="status" data-grouping data-tone="warn" data-tag="degraded" style="--j:3;--hue:348">Degraded</td><td data-col="tx util %" data-role="percent" class="number positive" style="--j:4;--t:0.463;--mag:0.463">44.0</td><td data-col="rx util %" data-role="percent" class="number positive" style="--j:5;--t:0.504;--mag:0.504">47.1</td><td data-col="crc errors" data-role="number" class="number positive" style="--j:6;--t:1;--mag:1">312</td></tr><tr data-row="6" data-group="Offline" data-group-start style="--i:4;--group:2"><td data-col="switch" data-role="label" data-primary data-tag="fab-a-01" style="--j:0;--hue:210">fab-a-01</td><td data-col="port" data-role="ordinal" class="number positive" style="--j:1">4</td><td data-col="speed" data-role="number" class="number positive" style="--j:2;--t:0.333;--mag:0.5">32G</td><td data-col="state" data-role="status" data-grouping data-tone="bad" data-tag="offline" style="--j:3;--hue:125">Offline</td><td data-col="tx util %" data-role="percent" class="number zero" style="--j:4;--t:0;--mag:0">0.0</td><td data-col="rx util %" data-role="percent" class="number zero" style="--j:5;--t:0;--mag:0">0.0</td><td data-col="crc errors" data-role="number" class="number zero" style="--j:6;--t:0;--mag:0">0</td></tr><tr data-row="7" data-group="Online" style="--i:5;--group:3"><td data-col="switch" data-role="label" data-primary data-tag="fab-a-01" style="--j:0;--hue:210">fab-a-01</td><td data-col="port" data-role="ordinal" class="number positive" style="--j:1">5</td><td data-col="speed" data-role="number" class="number positive" style="--j:2;--t:0.333;--mag:0.5">32G</td><td data-col="state" data-role="status" data-grouping data-tone="good" data-tag="online" style="--j:3;--hue:210">Online</td><td data-col="tx util %" data-role="percent" class="number positive" style="--j:4;--t:0.375;--mag:0.375">35.6</td><td data-col="rx util %" data-role="percent" class="number positive" style="--j:5;--t:0.557;--mag:0.557">52.0</td><td data-col="crc errors" data-role="number" class="number positive" style="--j:6;--t:0.006;--mag:0.006">2</td></tr><tr data-row="8" data-group="Online" style="--i:6;--group:3"><td data-col="switch" data-role="label" data-primary data-tag="fab-a-02" style="--j:0;--hue:348">fab-a-02</td><td data-col="port" data-role="ordinal" class="number zero" style="--j:1">0</td><td data-col="speed" data-role="number" class="number positive" style="--j:2;--t:1;--mag:1">64G</td><td data-col="state" data-role="status" data-grouping data-tone="good" data-tag="online" style="--j:3;--hue:210">Online</td><td data-col="tx util %" data-role="percent" class="number positive" style="--j:4;--t:0.233;--mag:0.233">22.1</td><td data-col="rx util %" data-role="percent" class="number positive" style="--j:5;--t:0.2;--mag:0.2">18.7</td><td data-col="crc errors" data-role="number" class="number zero" style="--j:6;--t:0;--mag:0">0</td></tr><tr data-row="9" data-group="Online" style="--i:7;--group:3"><td data-col="switch" data-role="label" data-primary data-tag="fab-a-02" style="--j:0;--hue:348">fab-a-02</td><td data-col="port" data-role="ordinal" class="number positive" style="--j:1">1</td><td data-col="speed" data-role="number" class="number positive" style="--j:2;--t:1;--mag:1">64G</td><td data-col="state" data-role="status" data-grouping data-tone="good" data-tag="online" style="--j:3;--hue:210">Online</td><td data-col="tx util %" data-role="percent" class="number positive" style="--j:4;--t:1;--mag:1">95.0</td><td data-col="rx util %" data-role="percent" class="number positive" style="--j:5;--t:1;--mag:1">93.4</td><td data-col="crc errors" data-role="number" class="number zero" style="--j:6;--t:0;--mag:0">0</td></tr><tr data-row="10" data-group="Online" style="--i:8;--group:3"><td data-col="switch" data-role="label" data-primary data-tag="fab-a-02" style="--j:0;--hue:348">fab-a-02</td><td data-col="port" data-role="ordinal" class="number positive" style="--j:1">2</td><td data-col="speed" data-role="number" class="number positive" style="--j:2;--t:0.333;--mag:0.5">32G</td><td data-col="state" data-role="status" data-grouping data-tone="good" data-tag="online" style="--j:3;--hue:210">Online</td><td data-col="tx util %" data-role="percent" class="number positive" style="--j:4;--t:0.056;--mag:0.056">5.3</td><td data-col="rx util %" data-role="percent" class="number positive" style="--j:5;--t:0.082;--mag:0.082">7.7</td><td data-col="crc errors" data-role="number" class="number zero" style="--j:6;--t:0;--mag:0">0</td></tr><tr data-row="11" data-group="Online" style="--i:9;--group:3"><td data-col="switch" data-role="label" data-primary data-tag="fab-a-02" style="--j:0;--hue:348">fab-a-02</td><td data-col="port" data-role="ordinal" class="number positive" style="--j:1">3</td><td data-col="speed" data-role="number" class="number positive" style="--j:2;--t:0.333;--mag:0.5">32G</td><td data-col="state" data-role="status" data-grouping data-tone="good" data-tag="online" style="--j:3;--hue:210">Online</td><td data-col="tx util %" data-role="percent" class="number positive" style="--j:4;--t:0.652;--mag:0.652">61.9</td><td data-col="rx util %" data-role="percent" class="number positive" style="--j:5;--t:0.623;--mag:0.623">58.2</td><td data-col="crc errors" data-role="number" class="number positive" style="--j:6;--t:0.045;--mag:0.045">14</td></tr></tbody></table></div></section>
+<section><header><h2>cities.csv</h2><p>Picked <b>clean bars</b>: a few measure columns get in-cell bars.</p><label>Try <select data-for="cities.csv"><option>clean</option><option>ledger</option><option>paper</option><option>splitflap</option><option>board</option><option>chat</option><option>clean heat</option><option selected>clean bars</option><option>ledger bars</option></select></label></header><div class="tableskin" data-skin="clean bars"><table data-rows="7" data-cols="4" style="--rows:7;--cols:4"><caption>Largest cities</caption><colgroup><col data-col="city" data-role="text"><col data-col="country" data-role="text"><col data-col="population (millions)" data-role="number"><col data-col="area (km2)" data-role="number"></colgroup><thead><tr data-row="1"><th data-col="city" data-role="text" data-primary style="--j:0">city</th><th data-col="country" data-role="text" style="--j:1">country</th><th data-col="population (millions)" data-role="number" class="number" style="--j:2">population (millions)</th><th data-col="area (km2)" data-role="number" class="number" style="--j:3">area (km2)</th></tr></thead><tbody><tr data-row="2" style="--i:0"><td data-col="city" data-role="text" data-primary style="--j:0">Tokyo</td><td data-col="country" data-role="text" style="--j:1">Japan</td><td data-col="population (millions)" data-role="number" class="number positive" style="--j:2;--t:1;--mag:1">37.1</td><td data-col="area (km2)" data-role="number" class="number positive" style="--j:3;--t:1;--mag:1">8231</td></tr><tr data-row="3" style="--i:1"><td data-col="city" data-role="text" data-primary style="--j:0">Delhi</td><td data-col="country" data-role="text" style="--j:1">India</td><td data-col="population (millions)" data-role="number" class="number positive" style="--j:2;--t:0.774;--mag:0.911">33.8</td><td data-col="area (km2)" data-role="number" class="number positive" style="--j:3;--t:0.252;--mag:0.285">2344</td></tr><tr data-row="4" style="--i:2"><td data-col="city" data-role="text" data-primary style="--j:0">Shanghai</td><td data-col="country" data-role="text" style="--j:1">China</td><td data-col="population (millions)" data-role="number" class="number positive" style="--j:2;--t:0.507;--mag:0.806">29.9</td><td data-col="area (km2)" data-role="number" class="number positive" style="--j:3;--t:0.471;--mag:0.494">4069</td></tr><tr data-row="5" style="--i:3"><td data-col="city" data-role="text" data-primary style="--j:0">Dhaka</td><td data-col="country" data-role="text" style="--j:1">Bangladesh</td><td data-col="population (millions)" data-role="number" class="number positive" style="--j:2;--t:0.096;--mag:0.644">23.9</td><td data-col="area (km2)" data-role="number" class="number positive" style="--j:3;--t:0;--mag:0.044">360</td></tr><tr data-row="6" style="--i:4"><td data-col="city" data-role="text" data-primary style="--j:0">São Paulo</td><td data-col="country" data-role="text" style="--j:1">Brazil</td><td data-col="population (millions)" data-role="number" class="number positive" style="--j:2;--t:0.021;--mag:0.615">22.8</td><td data-col="area (km2)" data-role="number" class="number positive" style="--j:3;--t:0.341;--mag:0.37">3043</td></tr><tr data-row="7" style="--i:5"><td data-col="city" data-role="text" data-primary style="--j:0">Cairo</td><td data-col="country" data-role="text" style="--j:1">Egypt</td><td data-col="population (millions)" data-role="number" class="number positive" style="--j:2;--t:0.007;--mag:0.609">22.6</td><td data-col="area (km2)" data-role="number" class="number positive" style="--j:3;--t:0.21;--mag:0.244">2010</td></tr><tr data-row="8" style="--i:6"><td data-col="city" data-role="text" data-primary style="--j:0">Mexico City</td><td data-col="country" data-role="text" style="--j:1">Mexico</td><td data-col="population (millions)" data-role="number" class="number positive" style="--j:2;--t:0;--mag:0.606">22.5</td><td data-col="area (km2)" data-role="number" class="number positive" style="--j:3;--t:0.276;--mag:0.307">2530</td></tr></tbody></table></div></section>
+</main>
+<script>
+for (const sel of document.querySelectorAll('select[data-for]')) {
+  sel.addEventListener('change', () => { sel.closest('section').querySelector('.tableskin').dataset.skin = sel.value; });
+}
+const btn = document.querySelector('.theme'), modes = ['auto', 'light', 'dark'];
+btn.addEventListener('click', () => {
+  const next = modes[(modes.indexOf(btn.textContent.slice(7)) + 1) % 3];
+  btn.textContent = 'Theme: ' + next;
+  if (next === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = next;
+});
+</script>
+</body>
+</html>

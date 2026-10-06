@@ -1,0 +1,16 @@
+/* bars (modifier): a thin bar under every measure, as long as the value is
+   against the column's largest, red for negatives. Combine with a skin:
+   "clean bars", "ledger bars". */
+@layer tableskin.mod {
+  [data-skin~="bars"] {
+    --bar: light-dark(#2563eb, #60a5fa);
+    --bar-neg: light-dark(#dc2626, #f87171);
+    & td:is([data-role="number"], [data-role="money"], [data-role="percent"]) {
+      background-image: linear-gradient(color-mix(in srgb, var(--bar) 75%, transparent) 0 0);
+      background-repeat: no-repeat;
+      background-position: right 0.9em bottom 0.3em;
+      background-size: calc(var(--mag, 0) * (100% - 1.8em)) 3px;
+    }
+    & td.negative[data-signed] { background-image: linear-gradient(color-mix(in srgb, var(--bar-neg) 75%, transparent) 0 0); }
+  }
+}

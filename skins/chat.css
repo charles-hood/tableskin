@@ -1,0 +1,83 @@
+/* chat: a messaging app. One bubble per row, the person's name in their own
+   color, a run of messages from one person grouped under one name and tail,
+   lines with no person (system notices) centered. Pass --me to put one
+   person's messages on the right. Follows the page's light or dark theme.
+   Adapted from examples/whatsapp-chat.cssv in CSSV, MIT; see NOTICE. The
+   original names each person; here --hue and data-run do it for anyone. */
+@layer tableskin.skin {
+  [data-skin~="chat"] {
+    --in: light-dark(#fff, #202c33);
+    --mine: light-dark(#d9fdd3, #005c4b);
+    --chip: light-dark(#fff, #182229);
+    --muted: light-dark(#667781, #8696a0);
+    box-sizing: border-box;
+    width: min(100%, 440px);
+    margin: 0 auto;
+    padding: 10px 18px 16px;
+    border-radius: 12px;
+    background: light-dark(#efeae2, #0b141a);
+    color: light-dark(#111b21, #e9edef);
+    font: 14px/1.35 system-ui, sans-serif;
+
+    & table { display: block; }
+    & caption { display: block; padding: 4px 0 6px; color: var(--muted); font-size: 12.5px; text-align: center; }
+    & colgroup, & thead { display: none; }
+    & tbody { display: flex; flex-direction: column; align-items: flex-start; }
+
+    /* A bubble with a tail, the name on top, the time in the corner. */
+    & tr {
+      --who: light-dark(hsl(var(--hue, 210) 70% 36%), hsl(var(--hue, 210) 75% 70%));
+      position: relative;
+      max-width: 80%;
+      margin-top: 10px;
+      padding: 6px 8px 8px 9px;
+      border-radius: 0 8px 8px;
+      background: var(--in);
+      box-shadow: 0 1px 0.5px rgb(11 20 26 / 0.13);
+    }
+    & tr::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -8px;
+      width: 8px;
+      height: 13px;
+      background: inherit;
+      clip-path: polygon(0 0, 100% 0, 100% 100%);
+    }
+    & td { display: none; padding: 0; }
+    & td[data-role="person"] { display: block; color: var(--who); font-size: 13px; font-weight: 600; }
+    & td[data-primary] { display: inline; overflow-wrap: anywhere; white-space: pre-wrap; }
+    & td[data-primary]::after { content: ""; display: inline-block; width: 42px; }
+    & td:is([data-role="time"], [data-role="datetime"]) {
+      display: block;
+      position: absolute;
+      right: 8px;
+      bottom: 4px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    /* A run from one person: no name, no tail, closer together. */
+    & tr[data-key]:not([data-run]) { margin-top: 2px; border-radius: 8px; }
+    & tr[data-key]:not([data-run])::before, & tr[data-key]:not([data-run]) td[data-role="person"] { display: none; }
+
+    /* My messages go right. */
+    & tr[data-me] { --muted: light-dark(#667781, #ffffff99); align-self: flex-end; border-radius: 8px 0 8px 8px; background: var(--mine); }
+    & tr[data-me]::before { left: auto; right: -8px; clip-path: polygon(0 0, 100% 0, 0 100%); }
+    & tr[data-me] td[data-role="person"] { display: none; }
+
+    /* Lines with no person are the app's own, centered. */
+    & tr:not([data-key]) {
+      align-self: center;
+      max-width: 90%;
+      padding: 5px 12px;
+      border-radius: 8px;
+      background: var(--chip);
+      color: var(--muted);
+      font-size: 12.5px;
+      text-align: center;
+    }
+    & tr:not([data-key])::before, & tr:not([data-key]) td:is([data-role="time"], [data-role="datetime"]), & tr:not([data-key]) td[data-primary]::after { display: none; }
+  }
+}

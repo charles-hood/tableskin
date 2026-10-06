@@ -1,0 +1,74 @@
+/* board: a kanban board. One lane per status (or category), cards stacked
+   in file order: the title on top, then labels, the id, numbers as pills and
+   the person. Lanes run in tone order: not started, in flight, trouble, done.
+   Adapted from examples/jira-export.cssv in CSSV, MIT; see NOTICE. The
+   original hard-codes Jira's four lanes; here the lanes come from the data. */
+@layer tableskin.skin {
+  [data-skin~="board"] {
+    --card: light-dark(#fff, #22272b);
+    --chip: light-dark(#dfe1e6, #2c333a);
+    --muted: light-dark(#5e6c84, #8c9bab);
+    padding: 14px;
+    border-radius: 12px;
+    background: light-dark(#f4f5f7, #1d2125);
+    color: light-dark(#172b4d, #b6c2cf);
+    font: 13px/1.4 system-ui, sans-serif;
+
+    & table {
+      display: grid;
+      grid-template-columns: repeat(var(--groups, 1), minmax(11rem, 1fr));
+      grid-auto-flow: dense;
+      gap: 8px 10px;
+      width: 100%;
+    }
+    & caption { grid-column: 1 / -1; padding: 0 2px 4px; font-size: 15px; font-weight: 700; }
+    & colgroup, & thead { display: none; }
+    & tbody { display: contents; }
+
+    /* A card. The first card in each lane carries the lane's title. */
+    & tbody tr {
+      grid-column: var(--group);
+      position: relative;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      padding: 10px;
+      border-radius: 4px;
+      background: var(--card);
+      box-shadow: 0 1px 1px rgb(9 30 66 / 0.25);
+    }
+    & tbody tr[data-group-start] { margin-top: 2.1em; }
+    & tbody tr[data-group-start]::before {
+      content: attr(data-group);
+      position: absolute;
+      bottom: calc(100% + 0.8em);
+      left: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    & td { display: block; padding: 0; white-space: normal; }
+    & td:is(:empty, [data-na], [data-grouping], [data-role="date"], [data-role="datetime"], [data-role="time"], [data-role="url"], [data-role="email"]) { display: none; }
+    & td[data-primary] { order: -1; flex-basis: 100%; font-weight: 500; }
+    & td:is([data-role="prose"], [data-role="text"]):not([data-primary]) { flex-basis: 100%; color: var(--muted); font-size: 12px; }
+    & td:is([data-role="label"], [data-role="status"]) {
+      padding: 1px 6px;
+      border-radius: 3px;
+      background: hsl(var(--hue) 60% 50% / 0.18);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    & td[data-role="id"] { order: 1; margin-right: auto; color: var(--muted); font-size: 12px; }
+    & td.number { order: 2; min-width: 22px; padding: 0 6px; border-radius: 11px; background: var(--chip); font-size: 12px; text-align: center; }
+    & td[data-role="person"] { order: 3; color: var(--muted); font-size: 12px; }
+
+    & tr:has(td[data-grouping][data-tone="good"]) td[data-primary] { color: var(--muted); text-decoration: line-through; }
+    & tr:has(td[data-grouping][data-tone="bad"]) { box-shadow: inset 3px 0 var(--bad), 0 1px 1px rgb(9 30 66 / 0.25); }
+  }
+}

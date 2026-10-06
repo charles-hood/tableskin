@@ -1,0 +1,14 @@
+sku,description,qty,unit price,amount
+0042,"Brand workshop
+Two half-day sessions, on site",2,"$1,200.00","$2,400.00"
+0108,"Logo system
+Primary mark, monogram, usage guide",1,"$3,800.00","$3,800.00"
+0213,"Page templates
+Twelve layouts for the website",12,$540.00,"$6,480.00"
+0315,"Illustration set
+Twenty-four spot drawings",24,$95.00,"$2,280.00"
+0400,"Rush delivery
+Waived for repeat clients",1,$0.00,$0.00
+,Subtotal,,,"$14,960.00"
+,Sales tax 7%,,,"$1,047.20"
+,Total due,,,"$16,007.20"

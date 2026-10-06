@@ -1,0 +1,11 @@
+key,summary,status,assignee,points,labels
+WEB-214,Checkout fails when the cart has more than 99 items,In Progress,Ana Sousa,3,checkout
+WEB-209,Add dark mode to the account pages,To Do,,5,design
+WEB-205,Move image uploads to the new storage bucket,In Review,Dev Patel,3,infra
+WEB-211,Password reset email goes to spam,To Do,,2,email
+WEB-198,Search results page,Done,Ben Ito,8,frontend
+WEB-207,Rate-limit the login endpoint,In Progress,Dev Patel,2,security
+WEB-212,Onboarding checklist for new teams,To Do,,8,frontend
+WEB-203,Footer links point to the old help center,Done,Caro Diaz,1,content
+WEB-200,Export invoices as PDF,In Review,Ana Sousa,5,billing
+WEB-196,Upgrade the payment SDK,Done,Ben Ito,3,billing

@@ -1,0 +1,26 @@
+/* tableskin base: the wrapper, and CSSV's default stylesheet (SPEC 8.2).
+   Adapted from CSSV by Rodrigo Paiva, MIT; see NOTICE.
+   Each skin is scoped to [data-skin~="name"] and sits in a layer, so tables
+   on one page can wear different skins, none can style the page around
+   it, and any unlayered rule on the page still wins over all of them. */
+@layer tableskin.base, tableskin.skin, tableskin.mod;
+
+@layer tableskin.base {
+  .tableskin {
+    contain: paint;                    /* SPEC 11.4: skins draw inside this box only */
+    overflow: auto hidden;
+    --good: light-dark(#15803d, #4ade80);
+    --warn: light-dark(#b45309, #fbbf24);
+    --bad: light-dark(#b91c1c, #f87171);
+    --neutral: color-mix(in srgb, currentColor 45%, transparent);
+  }
+  .tableskin table { border-collapse: collapse; }
+  .tableskin :is(th, td) { padding: 0.25em 0.5em; text-align: start; vertical-align: top; white-space: pre-wrap; }
+  .tableskin th { font-weight: bold; }
+  .tableskin .number { text-align: end; font-variant-numeric: tabular-nums; }
+  .tableskin caption { padding: 0 0 0.5em; text-align: start; font-weight: 600; }
+  .tableskin [data-tone="good"] { --tone: var(--good); }
+  .tableskin [data-tone="warn"] { --tone: var(--warn); }
+  .tableskin [data-tone="bad"] { --tone: var(--bad); }
+  .tableskin [data-tone="neutral"] { --tone: var(--neutral); }
+}

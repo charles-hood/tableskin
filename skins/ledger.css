@@ -1,0 +1,68 @@
+/* ledger: a bank statement. Money in is green with a plus sign, money out
+   keeps the text color, a running balance stays quiet. Follows the page's
+   light or dark theme.
+   Adapted from examples/ledger/ledger.css in CSSV, MIT; see NOTICE. The
+   original names its columns; this one finds them by role. */
+@layer tableskin.skin {
+  [data-skin~="ledger"] {
+    --credit: light-dark(#059669, #34d399);
+    & table { width: 100%; border-collapse: separate; border-spacing: 0; font: 14px/1.5 system-ui, sans-serif; }
+    & caption { padding: 0 0 0.9em; font-size: 1.15em; font-weight: 650; letter-spacing: -0.01em; }
+    & :is(th, td) {
+      padding: 0.65em 13px;
+      border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+      white-space: nowrap;
+      vertical-align: baseline;
+    }
+    & thead th {
+      border-bottom-color: color-mix(in srgb, currentColor 22%, transparent);
+      color: color-mix(in srgb, currentColor 55%, transparent);
+      font-size: 0.72em;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    & tbody tr:last-child td { border-bottom: 0; }
+    & tbody tr:hover td { background: color-mix(in srgb, currentColor 4%, transparent); }
+
+    & td:is([data-role="date"], [data-role="datetime"], [data-role="time"]) {
+      color: color-mix(in srgb, currentColor 60%, transparent);
+      font-variant-numeric: tabular-nums;
+    }
+    & td:is([data-role="id"], [data-role="ordinal"]) {
+      color: color-mix(in srgb, currentColor 50%, transparent);
+      font: 0.8em ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+    & td[data-primary] { font-weight: 550; }
+    & td[data-role="prose"] { min-width: 16em; white-space: pre-wrap; }
+    & td:is([data-role="label"], [data-role="status"], [data-role="person"]) {
+      color: color-mix(in srgb, currentColor 65%, transparent);
+      font-size: 0.86em;
+    }
+    & td:is([data-role="label"]:not(:empty), [data-tone])::before {
+      content: "";
+      display: inline-block;
+      width: 0.5em;
+      height: 0.5em;
+      margin-inline-end: 0.5em;
+      border-radius: 50%;
+      background: var(--tone, hsl(var(--hue) 60% 50%));
+      opacity: 0.8;
+      vertical-align: 0.1em;
+    }
+
+    /* Signed money is the amount column; unsigned money beside it is a balance. */
+    & td[data-role="money"][data-signed] { font-weight: 600; }
+    & td.number.positive[data-signed] { color: var(--credit); }
+    & td.number.positive[data-signed]::before { content: "+"; }
+    & table:has(td[data-role="money"][data-signed]) td[data-role="money"]:not([data-signed]) {
+      color: color-mix(in srgb, currentColor 60%, transparent);
+    }
+    & tr[data-total] td { font-weight: 650; border-top: 1.5px solid color-mix(in srgb, currentColor 30%, transparent); }
+
+    /* Narrow screens keep the date, the description and the amounts. */
+    @media (max-width: 640px) {
+      & :is(th, td) { padding-inline: 0.5em; }
+      & :is(th, td):is([data-role="id"], [data-role="label"]):not([data-primary]) { display: none; }
+    }
+  }
+}

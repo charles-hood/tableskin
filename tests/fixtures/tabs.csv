@@ -1,0 +1,4 @@
+host	state	latency ms
+web-01	UP	12
+web-02	down	
+web-03	degraded	340

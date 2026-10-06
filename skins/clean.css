@@ -1,0 +1,51 @@
+/* clean: the default. Hairline rules, quiet uppercase headers, colored dots
+   for statuses and categories. Colors are mixed from currentColor, so it
+   follows the page's light or dark theme.
+   After the reference tables on cssv.dev (site/tables.css), MIT; see NOTICE. */
+@layer tableskin.skin {
+  [data-skin~="clean"] {
+    & table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; line-height: 1.5; }
+    & caption { padding: 0 0 0.8em; font-size: 1.15em; font-weight: 650; letter-spacing: -0.01em; }
+    & :is(th, td) { padding: 0.6em 13px; border-bottom: 1px solid color-mix(in srgb, currentColor 11%, transparent); }
+    & thead th {
+      vertical-align: bottom;
+      border-bottom-color: color-mix(in srgb, currentColor 24%, transparent);
+      color: color-mix(in srgb, currentColor 58%, transparent);
+      font-size: 0.74em;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    & tbody tr:last-child td { border-bottom: 0; }
+    & tbody tr:hover td { background-color: color-mix(in srgb, currentColor 3.5%, transparent); }
+
+    & td:is([data-role="id"], [data-role="ordinal"]) {
+      color: color-mix(in srgb, currentColor 62%, transparent);
+      font: 0.86em/1.75 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+    & td:is([data-role="date"], [data-role="datetime"], [data-role="time"]) {
+      color: color-mix(in srgb, currentColor 65%, transparent);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    & td[data-primary] { font-weight: 550; }
+    & td.number.negative[data-signed] { color: var(--bad); }
+    & td[data-na] { color: color-mix(in srgb, currentColor 40%, transparent); }
+
+    /* A dot before each status (by tone) and each category (by hue). */
+    & td:is([data-tone], [data-role="label"]:not(:empty)) { white-space: nowrap; }
+    & td:is([data-tone], [data-role="label"]:not(:empty))::before {
+      content: "";
+      display: inline-block;
+      width: 0.5em;
+      height: 0.5em;
+      margin-inline-end: 0.5em;
+      border-radius: 50%;
+      background: var(--tone, hsl(var(--hue) 65% 52%));
+      vertical-align: 0.08em;
+    }
+
+    & tr[data-total] td { font-weight: 650; }
+    & tbody tr:not([data-total]) + tr[data-total] td { border-top: 1.5px solid color-mix(in srgb, currentColor 30%, transparent); }
+  }
+}

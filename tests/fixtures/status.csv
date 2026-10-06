@@ -1,0 +1,5 @@
+service,owner,health,checked,url
+api,Dana Wu,Healthy,2026-10-05 08:00,https://status.example.com/api
+db,Ravi Rao,Degraded,2026-10-05 08:01,https://status.example.com/db
+queue,Dana Wu,Failed,2026-10-05 08:02,https://status.example.com/queue
+cache,Lee Park,healthy,2026-10-05 08:03,https://status.example.com/cache

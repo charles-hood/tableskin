@@ -1,0 +1,8 @@
+time,flight,destination,gate,status
+08:15,LH 441,Frankfurt,B07,On time
+08:40,DL 92,Atlanta,A12,Boarding
+09:05,BA 217,London,C03,Delayed
+09:20,AF 1683,Paris,B11,On time
+09:45,UA 908,Denver,A04,Cancelled
+10:10,KL 644,Amsterdam,C09,On time
+10:35,AA 2210,Charlotte,A19,Delayed

@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>skinTable check</title>
+<body>
+<div id="host"></div>
+<script type="module">
+// Builds a plain table (header row inside tbody, no attributes) from the CSV
+// named in the query string, skins it in place, and writes the result into
+// a pre element (id out) for test_parity.py to read with --dump-dom.
+import { parseCSV, skinTable } from '../tableskin.js';
+const q = new URLSearchParams(location.search);
+const [header, rows] = parseCSV(await (await fetch(q.get('csv'))).text());
+const table = document.createElement('table');
+const tbody = table.createTBody();
+for (const r of [header, ...rows]) {
+  const tr = tbody.insertRow();
+  for (const v of r) tr.insertCell().textContent = v;
+}
+document.getElementById('host').append(table);
+const wrap = skinTable(table, { skin: q.get('skin') || 'auto', title: q.get('title'), styles: false });
+const pre = document.createElement('pre');
+pre.id = 'out';
+pre.textContent = wrap.outerHTML;
+document.body.append(pre);
+</script>
