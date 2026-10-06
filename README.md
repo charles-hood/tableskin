@@ -22,8 +22,9 @@ with hooks a stylesheet can rely on, and picks a skin that suits the data:
 
 Modifiers stack on a skin: `clean heat`, `ledger bars`.
 
-Open `gallery.html` to see every sample in its picked skin, with a menu to try
-the others and a light/dark toggle.
+**[See the gallery](https://charles-hood.github.io/tableskin/gallery.html)**: every sample in
+its picked skin, with a menu to try the others and a light/dark toggle. It is
+`gallery.html` in this repo, rebuilt by `tableskin.py --gallery`.
 
 ## Use
 
